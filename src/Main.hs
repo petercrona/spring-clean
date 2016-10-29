@@ -10,16 +10,20 @@ import System.FilePath.Find (
   (==?), find, always, fileType, (&&?),
   FileType(RegularFile), extension)
 
+type FileContent = String
+type File = (FilePath, FileContent)
+
 main :: IO ()
 main = do
   paths <- getFilePaths srcPath
   files <- mapM readFileStrict paths
   userProvidedClasses <- getAdditionalClasses
 
-  let classes = importsToParseResult userProvidedClasses : parse (zip paths files)
+  let classes = importsToParseResult userProvidedClasses : parseFiles (zip paths files)
   printUnusedClasses classes
 
-  where parse = map parseAst . rights . map toAst
+parseFiles :: [File] -> [Result]
+parseFiles = map parseAst . rights . map toAst
 
 printUnusedClasses :: [Result] -> IO ()
 printUnusedClasses = mapM_ print
