@@ -2,7 +2,7 @@ module Main where
 
 import Control.Exception (evaluate)
 import Data.List (isSuffixOf)
-import Java (importsToParseResult, parseAst, toAst, fileName)
+import Java (importsToParseResult, parseAst, toAst, fileName, Result)
 import DependencyGraph (getUnused)
 import Data.Either (rights)
 import Config
@@ -15,21 +15,23 @@ main = do
   paths <- getFilePaths srcPath
   files <- mapM readFileStrict paths
   userProvidedClasses <- getAdditionalClasses
+
   let classes = importsToParseResult userProvidedClasses : parse (zip paths files)
-  printUnusedComponents classes
+  printUnusedClasses classes
 
   where parse = map parseAst . rights . map toAst
-        fst3 (a, _, _) = a
-        printUnusedComponents =
-          mapM_ print
-          . filter (\x -> removeBlacklistedClassSuffixes x && x /= "")
-          . map (fileName . fst3)
-          . getUnused
+
+printUnusedClasses :: [Result] -> IO ()
+printUnusedClasses = mapM_ print
+                   . filter (\x -> removeBlacklistedClassSuffixes x && x /= "")
+                   . map (fileName . fst3)
+                   . getUnused
+  where fst3 (a, _, _) = a
 
 getFilePaths :: String -> IO [FilePath]
 getFilePaths = fmap (filter removeBlacklistedFiles) . find always onlyJavaFiles
                where onlyJavaFiles = fileType ==? RegularFile
-                                 &&? extension ==? ".java"
+                                     &&? extension ==? ".java"
 
 readFileStrict :: FilePath -> IO String
 readFileStrict path = do
@@ -38,7 +40,7 @@ readFileStrict path = do
   return file
 
 removeBlacklistedFiles :: String -> Bool
-removeBlacklistedFiles s = not.or $ map (\x -> isSuffixOf x s) blacklistedFiles
+removeBlacklistedFiles s = not.or $ map (`isSuffixOf` s) blacklistedFiles
 
 removeBlacklistedClassSuffixes :: String -> Bool
-removeBlacklistedClassSuffixes s = not.or $ map (\x -> isSuffixOf x s) blacklistedClassSuffixes
+removeBlacklistedClassSuffixes s = not.or $ map (`isSuffixOf` s) blacklistedClassSuffixes
