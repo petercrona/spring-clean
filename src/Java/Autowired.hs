@@ -7,9 +7,8 @@ import Language.Java.Syntax
 import Java.Annotations (parseModifier)
 import Data.Maybe
 import Java.Helper (identAsString, getPackageDeclName)
-import Data.Char (toLower, toUpper)
+import Data.Char (toUpper)
 import qualified Data.Map.Strict as Map
-import Data.List (findIndices)
 
 data Autowiring = AutowireAll String | Autowiring String String
                 deriving Show

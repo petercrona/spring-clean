@@ -35,7 +35,7 @@ fromDecl (MemberDecl mb) = methodDecl mb
 fromDecl _ = []
 
 methodDecl :: MemberDecl -> [String]
-methodDecl (MethodDecl mod _ _ _ _ _ _) = map parseModifier mod
+methodDecl (MethodDecl modifier _ _ _ _ _ _) = map parseModifier modifier
 methodDecl (MemberClassDecl classDecl) =
   fromTypeDecls (ClassTypeDecl classDecl)
 methodDecl _ = []
