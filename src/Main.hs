@@ -18,7 +18,6 @@ main = do
   paths <- getFilePaths srcPath
   files <- mapM readFileStrict paths
   userProvidedClasses <- getAdditionalClasses
-
   let classes = importsToResult userProvidedClasses : parseFiles (zip paths files)
   printUnusedClasses classes
 
