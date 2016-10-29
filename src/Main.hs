@@ -27,9 +27,10 @@ parseFiles = map parseAst . rights . map toAst
 
 printUnusedClasses :: [Result] -> IO ()
 printUnusedClasses = mapM_ print
-                   . map (fileName . fst3)
+                   . map getFilename
                    . getUnused
   where fst3 (a, _, _) = a
+        getFilename = fileName . fst3
 
 getFilePaths :: String -> IO [FilePath]
 getFilePaths = fmap (filter removeBlacklistedFiles) . find always onlyJavaFiles

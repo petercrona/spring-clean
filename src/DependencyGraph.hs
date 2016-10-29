@@ -14,60 +14,58 @@ import Data.List (isSuffixOf)
 
 type Node = (Result, String, [String])
 type NodeWithInDegree = (Node, Int)
+type ClassName = String
+type Indegree = Int
 
 getUnused :: [Result] -> [Node]
 getUnused xs = removeUsed (buildAutowiredMap xs) xs
 
 removeUsed :: Map.Map String Autowiring -> [Result] -> [Node]
-removeUsed autowiredMap = removeOnEmpty . removeBlacklisted . getWithoutInEdges
-  where removeOnAnnotations = filter blacklistedAnnotations
-        removeOnClassSuffix = filter removeBlacklistedClassSuffixes
-        removeOnEmpty = filter nodeHasClassName
-        removeOnAutowired = filter (inAutowired autowiredMap)
-        transformAllToEdges = map transformToEdges
-        removeBlacklisted = removeOnAnnotations . removeOnAutowired . removeOnClassSuffix
-        getWithoutInEdges = noInEdges . graphFromEdges' . transformAllToEdges
+removeUsed autowiredMap = removeEmpty . removeBlacklisted . getWithoutInEdges
+  where getWithoutInEdges   = noInEdges . graphFromEdges' . map transformToEdges
+        removeEmpty         = filter nodeHasClassName
+        removeBlacklisted   = filter hasNoBlacklistedAnnotation .
+                              filter (isAutowired autowiredMap) .
+                              filter hasNoBlacklistedClassSuffixes
 
-inAutowired :: Map.Map String Autowiring -> Node -> Bool
-inAutowired aMap node = not $ any (`Map.member` aMap) candidates
-  where candidates = fileName (fst' node): implements (fst' node)
+isAutowired :: Map.Map String Autowiring -> Node -> Bool
+isAutowired aMap node = not $ any (`Map.member` aMap) candidates
+  where candidates = fileName (fst3 node) : implements (fst3 node)
 
-buildAutowiredMap :: [Result] -> Map.Map String Autowiring
+buildAutowiredMap :: [Result] -> Map.Map ClassName Autowiring
 buildAutowiredMap xs = Map.fromList $ concatMap autowiredToTuple xs
   where autowiredToTuple = map toAutowiredTuple . autowired
 
-toAutowiredTuple :: Autowiring -> (String, Autowiring)
+toAutowiredTuple :: Autowiring -> (ClassName, Autowiring)
 toAutowiredTuple autowiring@(AutowireAll type') = (type', autowiring)
 toAutowiredTuple autowiring@(Autowiring type' _) = (type', autowiring)
 
-fst' :: (a,b,c) -> a
-fst' (a, _, _) = a
-
 noInEdges :: (Graph, Vertex -> Node) -> [Node]
-noInEdges (graph, vmap) = (getName . indegreeIsZero . addNodeName vmap) (withIndegree graph)
+noInEdges (graph, vmap) = getNodesWithoutIn nodesWithInDegree
+  where getNodesWithoutIn = map getNode . filter indegreeIsZero . resolveNode vmap
+        nodesWithInDegree = withIndegree graph
+        indegreeIsZero = (==0) . snd
 
-addNodeName :: (Vertex -> Node) -> [(Vertex, Int)] -> [NodeWithInDegree]
-addNodeName vmap = map (first vmap)
+getNode :: NodeWithInDegree -> Node
+getNode = fst
 
-getName :: [(Node, d)] -> [Node]
-getName = map fst
+resolveNode :: (Vertex -> Node) -> [(Vertex, Int)] -> [NodeWithInDegree]
+resolveNode vmap = map (first vmap)
 
-indegreeIsZero :: [(a, Int)] -> [(a, Int)]
-indegreeIsZero = filter ((==0).snd)
-
-withIndegree :: Graph -> [(Vertex,Int)]
+withIndegree :: Graph -> [(Vertex, Indegree)]
 withIndegree g = zip (indices g) (elems (indegree g))
 
 transformToEdges :: Result -> Node
-transformToEdges r = (r, fileName r, references r ++ imports r ++ implements r)
+transformToEdges r = (r, fileName r, outgoingEdges)
+  where outgoingEdges = references r ++ imports r ++ implements r
 
-blacklistedAnnotations :: Node -> Bool
-blacklistedAnnotations r = not $ any (`elem` annotations) getBlacklistedAnnotations
-  where annotations = topLevelAnnotations (fst' r) ++ methodAnnotations (fst' r)
+hasNoBlacklistedAnnotation :: Node -> Bool
+hasNoBlacklistedAnnotation r = not $ any (`elem` annotations) getBlacklistedAnnotations
+  where annotations = topLevelAnnotations (fst3 r) ++ methodAnnotations (fst3 r)
 
-removeBlacklistedClassSuffixes :: Node -> Bool
-removeBlacklistedClassSuffixes = isBlacklisted . fileName . fst3
-  where isBlacklisted s = not.or $ map (`isSuffixOf` s) blacklistedClassSuffixes
+hasNoBlacklistedClassSuffixes :: Node -> Bool
+hasNoBlacklistedClassSuffixes = not . isBlacklisted . fileName . fst3
+  where isBlacklisted s = or $ map (`isSuffixOf` s) blacklistedClassSuffixes
 
 nodeHasClassName :: Node -> Bool
 nodeHasClassName = (/= "") . fileName . fst3
