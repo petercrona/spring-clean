@@ -6,14 +6,7 @@ module DependencyGraph (
 import Control.Arrow (first)
 import Data.Graph
 import Data.Array (elems, indices)
-import Java (Result,
-             fileName,
-             imports,
-             references,
-             topLevelAnnotations,
-             methodAnnotations,
-             implements,
-             autowired)
+import Java
 import Java.Autowired (Autowiring(AutowireAll, Autowiring))
 import qualified Data.Map.Strict as Map
 import Config (getBlacklistedAnnotations)

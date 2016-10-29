@@ -10,7 +10,7 @@ import Data.List (elemIndices)
 import Text.Regex.PCRE
 
 -- Provide classes that are not expected to be found here but that are used.
--- You can use this to remove false positives for example.
+-- Could be classes that are only reference via strings for example.
 getAdditionalClasses :: IO [String]
 getAdditionalClasses = return []
 

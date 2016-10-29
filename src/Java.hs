@@ -1,8 +1,10 @@
 module Java (
   toAst,
   parseAst,
-  Result(Result, fileName, imports, references, topLevelAnnotations, methodAnnotations,
-         implements, autowired)
+  importsToParseResult,
+  Result(Result, fileName, imports, references,
+         topLevelAnnotations, methodAnnotations,
+         implements, autowired),
 ) where
 
 import Language.Java.Parser
@@ -42,3 +44,12 @@ parseAst c = Result { fileName = getQualifyingClassName c
   where imports' = getImports c
         nonQualifyingImports = getImportsNonQualified c
         nonQualifyingToQualifying = Map.fromList $ zip nonQualifyingImports imports'
+
+importsToParseResult :: [String] -> Result
+importsToParseResult e = Result { fileName = ""
+                                , imports = e
+                                , references = []
+                                , topLevelAnnotations = []
+                                , methodAnnotations = []
+                                , implements = []
+                                , autowired = [] }
