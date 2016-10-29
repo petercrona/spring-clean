@@ -27,7 +27,6 @@ parseFiles = map parseAst . rights . map toAst
 
 printUnusedClasses :: [Result] -> IO ()
 printUnusedClasses = mapM_ print
-                   . filter (\x -> removeBlacklistedClassSuffixes x && x /= "")
                    . map (fileName . fst3)
                    . getUnused
   where fst3 (a, _, _) = a
@@ -45,6 +44,3 @@ readFileStrict path = do
 
 removeBlacklistedFiles :: String -> Bool
 removeBlacklistedFiles s = not.or $ map (`isSuffixOf` s) blacklistedFiles
-
-removeBlacklistedClassSuffixes :: String -> Bool
-removeBlacklistedClassSuffixes s = not.or $ map (`isSuffixOf` s) blacklistedClassSuffixes

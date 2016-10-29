@@ -9,18 +9,24 @@ import Data.Array (elems, indices)
 import Java
 import Java.Autowired (Autowiring(AutowireAll, Autowiring))
 import qualified Data.Map.Strict as Map
-import Config (getBlacklistedAnnotations)
+import Config (getBlacklistedAnnotations, blacklistedClassSuffixes)
+import Data.List (isSuffixOf)
 
 type Node = (Result, String, [String])
 type NodeWithInDegree = (Node, Int)
 
 getUnused :: [Result] -> [Node]
-getUnused xs = (filter blacklistedAnnotations
-              . filter (inAutowired $ autowiredMap xs)
-              . noInEdges
-              . graphFromEdges'
-              . map transformToEdges) xs
- where autowiredMap = buildAutowiredMap
+getUnused xs = removeUsed (buildAutowiredMap xs) xs
+
+removeUsed :: Map.Map String Autowiring -> [Result] -> [Node]
+removeUsed autowiredMap = removeOnEmpty . removeBlacklisted . getWithoutInEdges
+  where removeOnAnnotations = filter blacklistedAnnotations
+        removeOnClassSuffix = filter removeBlacklistedClassSuffixes
+        removeOnEmpty = filter nodeHasClassName
+        removeOnAutowired = filter (inAutowired autowiredMap)
+        transformAllToEdges = map transformToEdges
+        removeBlacklisted = removeOnAnnotations . removeOnAutowired . removeOnClassSuffix
+        getWithoutInEdges = noInEdges . graphFromEdges' . transformAllToEdges
 
 inAutowired :: Map.Map String Autowiring -> Node -> Bool
 inAutowired aMap node = not $ any (`Map.member` aMap) candidates
@@ -58,3 +64,13 @@ transformToEdges r = (r, fileName r, references r ++ imports r ++ implements r)
 blacklistedAnnotations :: Node -> Bool
 blacklistedAnnotations r = not $ any (`elem` annotations) getBlacklistedAnnotations
   where annotations = topLevelAnnotations (fst' r) ++ methodAnnotations (fst' r)
+
+removeBlacklistedClassSuffixes :: Node -> Bool
+removeBlacklistedClassSuffixes = isBlacklisted . fileName . fst3
+  where isBlacklisted s = not.or $ map (`isSuffixOf` s) blacklistedClassSuffixes
+
+nodeHasClassName :: Node -> Bool
+nodeHasClassName = (/= "") . fileName . fst3
+
+fst3 :: (a, b, c) -> a
+fst3 (a, _, _) = a
