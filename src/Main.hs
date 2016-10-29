@@ -2,7 +2,7 @@ module Main where
 
 import Control.Exception (evaluate)
 import Data.List (isSuffixOf)
-import Java (importsToParseResult, parseAst, toAst, fileName, Result)
+import Java (importsToResult, parseAst, toAst, fileName, Result)
 import DependencyGraph (getUnused)
 import Data.Either (rights)
 import Config
@@ -19,7 +19,7 @@ main = do
   files <- mapM readFileStrict paths
   userProvidedClasses <- getAdditionalClasses
 
-  let classes = importsToParseResult userProvidedClasses : parseFiles (zip paths files)
+  let classes = importsToResult userProvidedClasses : parseFiles (zip paths files)
   printUnusedClasses classes
 
 parseFiles :: [File] -> [Result]
