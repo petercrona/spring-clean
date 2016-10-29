@@ -65,7 +65,7 @@ hasNoBlacklistedAnnotation r = not $ any (`elem` annotations) getBlacklistedAnno
 
 hasNoBlacklistedClassSuffixes :: Node -> Bool
 hasNoBlacklistedClassSuffixes = not . isBlacklisted . fileName . fst3
-  where isBlacklisted s = or $ map (`isSuffixOf` s) blacklistedClassSuffixes
+  where isBlacklisted s = any (`isSuffixOf` s) blacklistedClassSuffixes
 
 nodeHasClassName :: Node -> Bool
 nodeHasClassName = (/= "") . fileName . fst3

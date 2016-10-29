@@ -26,9 +26,7 @@ parseFiles :: [File] -> [Result]
 parseFiles = map parseAst . rights . map toAst
 
 printUnusedClasses :: [Result] -> IO ()
-printUnusedClasses = mapM_ print
-                   . map getFilename
-                   . getUnused
+printUnusedClasses = mapM_ (print . getFilename) . getUnused
   where fst3 (a, _, _) = a
         getFilename = fileName . fst3
 
